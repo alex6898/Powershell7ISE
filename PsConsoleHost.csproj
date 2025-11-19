@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <Version>1.0.2</Version>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+   
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.64.0" />
+    <PackageReference Include="Microsoft.Identity.Client.Desktop" Version="4.64.0" />
+
+  </ItemGroup>
+
+  <!-- Ressource de coloration -->
+  <ItemGroup>
+    <Resource Include="PowerShell.xshd" />
+  </ItemGroup>
+  
+  <!-- Icône de l'application -->
+  <ItemGroup>
+    <Resource Include="Resources\app.ico" />
+  </ItemGroup>
+</Project>
