@@ -1,5 +1,5 @@
 ; Script d'installation Inno Setup pour Powershell 7 ISE
-; Ce script installe automatiquement tous les prérequis nécessaires (.NET 8.0, WebView2)
+; Ce script installe automatiquement .NET 8.0 Desktop Runtime si nécessaire
 
 #define MyAppName "Powershell 7 ISE"
 #define MyAppVersion "1.0.2"
@@ -248,42 +248,45 @@ begin
   end;
 end;
 
-// Fonction pour télécharger un fichier via PowerShell
+// Fonction pour télécharger un fichier via VBScript (plus fiable que PowerShell)
 function DownloadFile(Url: String; DestFile: String): Boolean;
 var
   ResultCode: Integer;
-  PowerShellScript: String;
+  VbsScript: String;
   ScriptFile: String;
   DestDir: String;
 begin
   Result := False;
-  ScriptFile := ExpandConstant('{tmp}\download.ps1');
+  ScriptFile := ExpandConstant('{tmp}\download.vbs');
   DestDir := ExtractFileDir(DestFile);
   
   // Créer le répertoire de destination s'il n'existe pas
   if not DirExists(DestDir) then
     ForceDirectories(DestDir);
   
-  // Créer un script PowerShell pour télécharger le fichier
-  PowerShellScript := 'try {' + #13#10 +
-                      '  $ProgressPreference = ''SilentlyContinue''' + #13#10 +
-                      '  $ErrorActionPreference = ''Stop''' + #13#10 +
-                      '  $destDir = [System.IO.Path]::GetDirectoryName(''' + DestFile + ''')' + #13#10 +
-                      '  if (-not [System.IO.Directory]::Exists($destDir)) {' + #13#10 +
-                      '    [System.IO.Directory]::CreateDirectory($destDir) | Out-Null' + #13#10 +
-                      '  }' + #13#10 +
-                      '  Invoke-WebRequest -Uri ''' + Url + ''' -OutFile ''' + DestFile + ''' -UseBasicParsing' + #13#10 +
-                      '  exit 0' + #13#10 +
-                      '} catch {' + #13#10 +
-                      '  Write-Host $_.Exception.Message' + #13#10 +
-                      '  exit 1' + #13#10 +
-                      '}';
+  // Créer un script VBScript pour télécharger le fichier (plus fiable)
+  VbsScript := 'On Error Resume Next' + #13#10 +
+               'Set xHttp = CreateObject("Microsoft.XMLHTTP")' + #13#10 +
+               'xHttp.Open "GET", "' + Url + '", False' + #13#10 +
+               'xHttp.Send' + #13#10 +
+               'If Err.Number = 0 And xHttp.Status = 200 Then' + #13#10 +
+               '  Set oStream = CreateObject("ADODB.Stream")' + #13#10 +
+               '  oStream.Open' + #13#10 +
+               '  oStream.Type = 1' + #13#10 +
+               '  oStream.Write xHttp.responseBody' + #13#10 +
+               '  oStream.SaveToFile "' + DestFile + '", 2' + #13#10 +
+               '  oStream.Close' + #13#10 +
+               '  If Err.Number = 0 Then' + #13#10 +
+               '    WScript.Quit 0' + #13#10 +
+               '  End If' + #13#10 +
+               'End If' + #13#10 +
+               'WScript.Quit 1';
   
   // Écrire le script dans un fichier temporaire
-  if SaveStringToFile(ScriptFile, PowerShellScript, False) then
+  if SaveStringToFile(ScriptFile, VbsScript, False) then
   begin
-    // Exécuter PowerShell pour télécharger le fichier
-    if Exec('powershell.exe', '-ExecutionPolicy Bypass -NoProfile -File "' + ScriptFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    // Exécuter VBScript pour télécharger le fichier
+    if Exec('cscript.exe', '//nologo "' + ScriptFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
     begin
       if (ResultCode = 0) and FileExists(DestFile) then
       begin
@@ -484,58 +487,38 @@ end;
 function InitializeSetup(): Boolean;
 var
   DotNetMissing: Boolean;
-  WebView2Missing: Boolean;
   Response: Integer;
 begin
   Result := True;
   DotNetMissing := not IsDotNet80Installed();
-  WebView2Missing := not IsWebView2Installed();
   
-  if DotNetMissing or WebView2Missing then
+  // WebView2 n'est plus requis (pas utilisé dans l'application)
+  // On ne vérifie plus WebView2
+  
+  if DotNetMissing then
   begin
-    if DotNetMissing and WebView2Missing then
-    begin
-      Response := MsgBox('Les prérequis suivants sont manquants:' + #13#10 +
-                         '- .NET 8.0 Desktop Runtime' + #13#10 +
-                         '- WebView2 Runtime' + #13#10 + #13#10 +
-                         'Souhaitez-vous les installer maintenant ?', mbConfirmation, MB_YESNO);
-    end
-    else if DotNetMissing then
-    begin
-      Response := MsgBox('.NET 8.0 Desktop Runtime est manquant.' + #13#10 +
-                         'Souhaitez-vous l''installer maintenant ?', mbConfirmation, MB_YESNO);
-    end
-    else
-    begin
-      Response := MsgBox('WebView2 Runtime est manquant.' + #13#10 +
-                         'Souhaitez-vous l''installer maintenant ?', mbConfirmation, MB_YESNO);
-    end;
+    Response := MsgBox('.NET 8.0 Desktop Runtime est manquant.' + #13#10 +
+                       'L''application ne fonctionnera pas sans .NET 8.0.' + #13#10 + #13#10 +
+                       'Souhaitez-vous l''installer maintenant ?' + #13#10 +
+                       '(Cliquez sur Non pour continuer quand même)', mbConfirmation, MB_YESNO);
     
     if Response = IDYES then
     begin
-      if DotNetMissing then
+      if not InstallDotNet80() then
       begin
-        if not InstallDotNet80() then
-        begin
-          Result := False;
-          Exit;
-        end;
-      end;
-      
-      if WebView2Missing then
-      begin
-        if not InstallWebView2() then
-        begin
-          Result := False;
-          Exit;
-        end;
+        // Même si l'installation échoue, on continue
+        MsgBox('L''installation de .NET 8.0 a échoué, mais l''installation de l''application va continuer.' + #13#10 +
+               'Vous devrez installer .NET 8.0 manuellement pour utiliser l''application.' + #13#10 + #13#10 +
+               'Téléchargement : https://dotnet.microsoft.com/download/dotnet/8.0', 
+               mbInformation, MB_OK);
       end;
     end
     else
     begin
-      MsgBox('L''installation ne peut pas continuer sans les prérequis nécessaires.', mbError, MB_OK);
-      Result := False;
-      Exit;
+      MsgBox('Attention : L''application nécessite .NET 8.0 Desktop Runtime pour fonctionner.' + #13#10 +
+             'Vous pouvez l''installer plus tard depuis :' + #13#10 +
+             'https://dotnet.microsoft.com/download/dotnet/8.0', 
+             mbInformation, MB_OK);
     end;
   end;
 end;
