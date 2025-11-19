@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="PowerShell" extensions=".ps1;.psm1" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comment" foreground="#8B949E"/>
+  <Color name="String"  foreground="#A5D6FF"/>
+  <Color name="Keyword" foreground="#79C0FF" fontWeight="bold"/>
+  <Color name="Cmdlet"  foreground="#58A6FF"/>
+  <RuleSet>
+    <!-- Commentaires -->
+    <Span color="Comment" begin="#[^!]" beginRegex="true" end="$" />
+    <Span color="Comment" begin="<#" end="#>" multiline="true" />
+    <!-- Chaînes -->
+    <Span color="String"  begin="@" end="@"  multiline="true" />
+    <Span color="String"  begin="'" end="'"  />
+    <Span color="String"  begin="&quot;" end="&quot;" />
+    <!-- Mots-clés principaux -->
+    <Keywords color="Keyword">
+      <Word>function</Word><Word>param</Word><Word>begin</Word><Word>process</Word><Word>end</Word>
+      <Word>if</Word><Word>elseif</Word><Word>else</Word><Word>switch</Word><Word>foreach</Word><Word>for</Word>
+      <Word>while</Word><Word>do</Word><Word>until</Word><Word>return</Word><Word>break</Word><Word>continue</Word>
+      <Word>try</Word><Word>catch</Word><Word>finally</Word><Word>throw</Word>
+      <Word>class</Word><Word>enum</Word><Word>using</Word>
+    </Keywords>
+  </RuleSet>
+</SyntaxDefinition>

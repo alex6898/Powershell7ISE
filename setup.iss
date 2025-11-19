@@ -1,5 +1,5 @@
 ; Script d'installation Inno Setup pour Powershell 7 ISE
-; Ce script installe automatiquement .NET 8.0 Desktop Runtime si nécessaire
+; L'application gère elle-même la vérification et l'installation de .NET 8.0 au démarrage
 
 #define MyAppName "Powershell 7 ISE"
 #define MyAppVersion "1.0.2"
@@ -484,43 +484,13 @@ begin
 end;
 
 // Fonction appelée avant l'installation
+// L'application gère elle-même la vérification et l'installation de .NET 8.0 au démarrage
+// Donc on installe simplement l'application sans vérifier les prérequis
 function InitializeSetup(): Boolean;
-var
-  DotNetMissing: Boolean;
-  Response: Integer;
 begin
   Result := True;
-  DotNetMissing := not IsDotNet80Installed();
-  
-  // WebView2 n'est plus requis (pas utilisé dans l'application)
-  // On ne vérifie plus WebView2
-  
-  if DotNetMissing then
-  begin
-    Response := MsgBox('.NET 8.0 Desktop Runtime est manquant.' + #13#10 +
-                       'L''application ne fonctionnera pas sans .NET 8.0.' + #13#10 + #13#10 +
-                       'Souhaitez-vous l''installer maintenant ?' + #13#10 +
-                       '(Cliquez sur Non pour continuer quand même)', mbConfirmation, MB_YESNO);
-    
-    if Response = IDYES then
-    begin
-      if not InstallDotNet80() then
-      begin
-        // Même si l'installation échoue, on continue
-        MsgBox('L''installation de .NET 8.0 a échoué, mais l''installation de l''application va continuer.' + #13#10 +
-               'Vous devrez installer .NET 8.0 manuellement pour utiliser l''application.' + #13#10 + #13#10 +
-               'Téléchargement : https://dotnet.microsoft.com/download/dotnet/8.0', 
-               mbInformation, MB_OK);
-      end;
-    end
-    else
-    begin
-      MsgBox('Attention : L''application nécessite .NET 8.0 Desktop Runtime pour fonctionner.' + #13#10 +
-             'Vous pouvez l''installer plus tard depuis :' + #13#10 +
-             'https://dotnet.microsoft.com/download/dotnet/8.0', 
-             mbInformation, MB_OK);
-    end;
-  end;
+  // Aucune vérification de prérequis nécessaire
+  // L'application proposera automatiquement d'installer .NET 8.0 au premier démarrage si nécessaire
 end;
 
 // Fonction appelée avant la désinstallation
