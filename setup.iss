@@ -1,9 +1,9 @@
-; Script d'installation Inno Setup pour PsConsoleHost
+; Script d'installation Inno Setup pour Powershell 7 ISE
 ; Ce script installe automatiquement tous les prérequis nécessaires (.NET 8.0, WebView2)
 
-#define MyAppName "PsConsoleHost"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "PsConsoleHost"
+#define MyAppName "Powershell 7 ISE"
+#define MyAppVersion "1.0.1"
+#define MyAppPublisher "Powershell 7 ISE"
 #define MyAppExeName "PsConsoleHost.exe"
 #define MyAppId "{{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
 
@@ -13,12 +13,12 @@ AppId={#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
+DefaultDirName={autopf}\Powershell7ISE
+DefaultGroupName=Powershell 7 ISE
 AllowNoIcons=yes
 LicenseFile=
 OutputDir=installer
-OutputBaseFilename=PsConsoleHost-Setup
+OutputBaseFilename=Powershell7ISE-Setup
 SetupIconFile=Resources\app.ico
 Compression=lzma
 SolidCompression=yes
