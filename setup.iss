@@ -1,8 +1,8 @@
 ; Script d'installation Inno Setup pour Powershell 7 ISE
-; L'application gère elle-même la vérification et l'installation de .NET 8.0 au démarrage
+; Ce script installe automatiquement tous les prérequis nécessaires (.NET 8.0, WebView2)
 
 #define MyAppName "Powershell 7 ISE"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.0.3"
 #define MyAppPublisher "Powershell 7 ISE"
 #define MyAppExeName "Powershell7ISE.exe"
 #define MyAppId "{{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
@@ -187,52 +187,18 @@ end;
 // Fonction pour trouver un fichier SDK .NET dans le dossier installer
 function FindDotNetSDKFile(Architecture: String): String;
 var
+  SdkFiles: TArrayOfString;
+  i: Integer;
   FileName: String;
 begin
   Result := '';
   
   // Chercher les fichiers SDK possibles pour cette architecture
   // Format: dotnet-sdk-8.0.*-win-{arch}.exe
-  // Essayer d'abord avec {srcexe}, puis avec {src}
+  SetArrayLength(SdkFiles, 0);
   
   // Vérifier les versions SDK courantes (8.0.416, 8.0.400, etc.)
-  // Essayer d'abord avec {srcexe} (plus fiable)
-  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.416-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.400-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.300-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.200-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.100-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  // Essayer avec {src} comme alternative
+  // On va chercher avec des noms spécifiques
   FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.416-win-' + Architecture + '.exe');
   if FileExists(FileName) then
   begin
@@ -246,47 +212,53 @@ begin
     Result := FileName;
     Exit;
   end;
+  
+  FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.300-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.200-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.100-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
 end;
 
-// Fonction pour télécharger un fichier via VBScript (plus fiable que PowerShell)
+// Fonction pour télécharger un fichier via PowerShell
 function DownloadFile(Url: String; DestFile: String): Boolean;
 var
   ResultCode: Integer;
-  VbsScript: String;
+  PowerShellScript: String;
   ScriptFile: String;
-  DestDir: String;
 begin
   Result := False;
-  ScriptFile := ExpandConstant('{tmp}\download.vbs');
-  DestDir := ExtractFileDir(DestFile);
+  ScriptFile := ExpandConstant('{tmp}\download.ps1');
   
-  // Créer le répertoire de destination s'il n'existe pas
-  if not DirExists(DestDir) then
-    ForceDirectories(DestDir);
-  
-  // Créer un script VBScript pour télécharger le fichier (plus fiable)
-  VbsScript := 'On Error Resume Next' + #13#10 +
-               'Set xHttp = CreateObject("Microsoft.XMLHTTP")' + #13#10 +
-               'xHttp.Open "GET", "' + Url + '", False' + #13#10 +
-               'xHttp.Send' + #13#10 +
-               'If Err.Number = 0 And xHttp.Status = 200 Then' + #13#10 +
-               '  Set oStream = CreateObject("ADODB.Stream")' + #13#10 +
-               '  oStream.Open' + #13#10 +
-               '  oStream.Type = 1' + #13#10 +
-               '  oStream.Write xHttp.responseBody' + #13#10 +
-               '  oStream.SaveToFile "' + DestFile + '", 2' + #13#10 +
-               '  oStream.Close' + #13#10 +
-               '  If Err.Number = 0 Then' + #13#10 +
-               '    WScript.Quit 0' + #13#10 +
-               '  End If' + #13#10 +
-               'End If' + #13#10 +
-               'WScript.Quit 1';
+  // Créer un script PowerShell pour télécharger le fichier
+  PowerShellScript := 'try {' + #13#10 +
+                      '  $ProgressPreference = ''SilentlyContinue''' + #13#10 +
+                      '  Invoke-WebRequest -Uri ''' + Url + ''' -OutFile ''' + DestFile + '''' + #13#10 +
+                      '  exit 0' + #13#10 +
+                      '} catch {' + #13#10 +
+                      '  exit 1' + #13#10 +
+                      '}';
   
   // Écrire le script dans un fichier temporaire
-  if SaveStringToFile(ScriptFile, VbsScript, False) then
+  if SaveStringToFile(ScriptFile, PowerShellScript, False) then
   begin
-    // Exécuter VBScript pour télécharger le fichier
-    if Exec('cscript.exe', '//nologo "' + ScriptFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    // Exécuter PowerShell pour télécharger le fichier
+    if Exec('powershell.exe', '-ExecutionPolicy Bypass -NoProfile -File "' + ScriptFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
     begin
       if (ResultCode = 0) and FileExists(DestFile) then
       begin
@@ -323,12 +295,7 @@ begin
     
     // Vérifier si le fichier existe déjà dans le dossier installer (priorité)
     // D'abord chercher Desktop Runtime, puis SDK (les SDK incluent aussi le runtime)
-    // Essayer plusieurs emplacements possibles
-    if FileExists(ExpandConstant('{srcexe}\..\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe')) then
-    begin
-      TempFile := ExpandConstant('{srcexe}\..\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe');
-    end
-    else if FileExists(ExpandConstant('{src}\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe')) then
+    if FileExists(ExpandConstant('{src}\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe')) then
     begin
       TempFile := ExpandConstant('{src}\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe');
     end
@@ -336,13 +303,17 @@ begin
     begin
       // Chercher le SDK correspondant (peut avoir différentes versions)
       TempFile := FindDotNetSDKFile(Architecture);
-      if TempFile = '' then
+      if TempFile <> '' then
+      begin
+        // SDK trouvé, on l'utilisera
+      end
+      else
       begin
         // Aucun fichier local trouvé, on va télécharger
         TempFile := ExpandConstant('{tmp}\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe');
         
         // URLs de téléchargement pour .NET 8.0 Desktop Runtime
-        // Utiliser les URLs officielles Microsoft
+        // Essayer plusieurs URLs car les liens Microsoft peuvent changer
         if Architecture = 'x64' then
           DownloadUrl := 'https://download.visualstudio.microsoft.com/download/pr/81513200-6370-4fd8-9579-6d59bd0c8d62/8b0ad1953d5e8f54e5d0e42e8c5b7e3e/dotnet-desktop-runtime-8.0.0-win-x64.exe'
         else if Architecture = 'x86' then
@@ -484,13 +455,63 @@ begin
 end;
 
 // Fonction appelée avant l'installation
-// L'application gère elle-même la vérification et l'installation de .NET 8.0 au démarrage
-// Donc on installe simplement l'application sans vérifier les prérequis
 function InitializeSetup(): Boolean;
+var
+  DotNetMissing: Boolean;
+  WebView2Missing: Boolean;
+  Response: Integer;
 begin
   Result := True;
-  // Aucune vérification de prérequis nécessaire
-  // L'application proposera automatiquement d'installer .NET 8.0 au premier démarrage si nécessaire
+  DotNetMissing := not IsDotNet80Installed();
+  WebView2Missing := not IsWebView2Installed();
+  
+  if DotNetMissing or WebView2Missing then
+  begin
+    if DotNetMissing and WebView2Missing then
+    begin
+      Response := MsgBox('Les prérequis suivants sont manquants:' + #13#10 +
+                         '- .NET 8.0 Desktop Runtime' + #13#10 +
+                         '- WebView2 Runtime' + #13#10 + #13#10 +
+                         'Souhaitez-vous les installer maintenant ?', mbConfirmation, MB_YESNO);
+    end
+    else if DotNetMissing then
+    begin
+      Response := MsgBox('.NET 8.0 Desktop Runtime est manquant.' + #13#10 +
+                         'Souhaitez-vous l''installer maintenant ?', mbConfirmation, MB_YESNO);
+    end
+    else
+    begin
+      Response := MsgBox('WebView2 Runtime est manquant.' + #13#10 +
+                         'Souhaitez-vous l''installer maintenant ?', mbConfirmation, MB_YESNO);
+    end;
+    
+    if Response = IDYES then
+    begin
+      if DotNetMissing then
+      begin
+        if not InstallDotNet80() then
+        begin
+          Result := False;
+          Exit;
+        end;
+      end;
+      
+      if WebView2Missing then
+      begin
+        if not InstallWebView2() then
+        begin
+          Result := False;
+          Exit;
+        end;
+      end;
+    end
+    else
+    begin
+      MsgBox('L''installation ne peut pas continuer sans les prérequis nécessaires.', mbError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+  end;
 end;
 
 // Fonction appelée avant la désinstallation
