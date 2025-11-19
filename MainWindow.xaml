@@ -1,0 +1,168 @@
+﻿<Window x:Class="PsConsoleHost.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="Powershell 7 ISE" Height="700" Width="1100"
+        Background="{StaticResource BackgroundDark}"
+        Icon="pack://application:,,,/Resources/app.ico"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <!-- Style pour le GridSplitter moderne -->
+        <Style TargetType="GridSplitter">
+            <Setter Property="Background" Value="{StaticResource BorderColor}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="SizeNS"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Style pour les TextBox modernes -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource BackgroundSecondary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+    <DockPanel>
+        <!-- Barre d'outils moderne intégrée -->
+        <Border DockPanel.Dock="Top" 
+                Background="{StaticResource BackgroundSecondary}"
+                BorderBrush="{StaticResource BorderColor}"
+                BorderThickness="0,0,0,1"
+                Height="48"
+                VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal" 
+                       VerticalAlignment="Center"
+                       Margin="8,0">
+                <Button x:Name="OpenMenuButton" Content="📂 Ouvrir" Style="{StaticResource ModernButton}" Click="OpenMenuButton_Click">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="OpenContextMenu" 
+                                     Background="{StaticResource BackgroundSecondary}"
+                                     BorderBrush="{StaticResource BorderColor}"
+                                     BorderThickness="1">
+                            <MenuItem Header="📄 Ouvrir un fichier .ps1" Click="OpenScript_Click"/>
+                            <MenuItem Header="☁️ Ouvrir depuis SharePoint" Click="OpenFromSharePoint_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                <Button Content="💾 Enregistrer" Style="{StaticResource ModernButton}" Click="SaveScript_Click"/>
+                <Rectangle Width="1" 
+                          Height="24" 
+                          Fill="{StaticResource BorderColor}" 
+                          Margin="8,0"/>
+                <Button Content="▶ Run (F5)" Style="{StaticResource ModernButton}" 
+                        Foreground="{StaticResource AccentGreen}" Click="RunFile_Click"/>
+                <Button Content="▶▶ Run Selection (F8)" Style="{StaticResource ModernButton}"
+                        Foreground="{StaticResource AccentGreen}" Click="RunSelection_Click"/>
+                <Rectangle Width="1" 
+                          Height="24" 
+                          Fill="{StaticResource BorderColor}" 
+                          Margin="8,0"/>
+                <Button Content="⏹ Arrêter" Style="{StaticResource ModernButton}"
+                        Foreground="{StaticResource AccentOrange}" Click="SendCtrlC_Click"/>
+                <Button Content="🗑 Clear" Style="{StaticResource ModernButton}" Click="Clear_Click"/>
+                <Rectangle Width="1" 
+                          Height="24" 
+                          Fill="{StaticResource BorderColor}" 
+                          Margin="8,0"/>
+                <Button Content="🔄 Vérifier les mises à jour" Style="{StaticResource ModernButton}" 
+                        Foreground="{StaticResource AccentBlue}" Click="CheckForUpdates_Click"/>
+                <Rectangle Width="1" 
+                          Height="24" 
+                          Fill="{StaticResource BorderColor}" 
+                          Margin="8,0"/>
+                <Button Content="ℹ️ À propos" Style="{StaticResource ModernButton}" 
+                        Foreground="{StaticResource AccentBlue}" Click="About_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Layout: Éditeur (haut) / Splitter / Console / Entrée -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="4" />
+                <RowDefinition Height="2*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- === ÉDITEUR (modifiable) === -->
+            <Border Grid.Row="0" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1">
+                <avalonEdit:TextEditor x:Name="Editor"
+                                       ShowLineNumbers="True"
+                                       FontFamily="Cascadia Code, Consolas, Menlo"
+                                       FontSize="13"
+                                       SyntaxHighlighting="PowerShell"
+                                       Background="{StaticResource EditorBackground}"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       HorizontalScrollBarVisibility="Auto"
+                                       VerticalScrollBarVisibility="Auto"/>
+            </Border>
+
+            <GridSplitter Grid.Row="1" Height="4"/>
+
+            <!-- === CONSOLE (lecture seule) === -->
+            <Border Grid.Row="2" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1">
+                <ScrollViewer x:Name="Scroll" 
+                              Background="{StaticResource ConsoleBackground}"
+                              VerticalScrollBarVisibility="Auto">
+                    <RichTextBox x:Name="Terminal"
+                                 FontFamily="Cascadia Code, Consolas, Menlo"
+                                 FontSize="13"
+                                 IsReadOnly="True"
+                                 Background="{StaticResource ConsoleBackground}"
+                                 Foreground="White"
+                                 BorderThickness="0"
+                                 Padding="12,8"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 IsDocumentEnabled="False">
+                        <RichTextBox.Resources>
+                            <Style TargetType="Paragraph">
+                                <Setter Property="Margin" Value="0"/>
+                            </Style>
+                        </RichTextBox.Resources>
+                    </RichTextBox>
+                </ScrollViewer>
+            </Border>
+
+            <!-- === ENTRÉE UTILISATEUR (prompt + TextBox) === -->
+            <DockPanel Grid.Row="3" Background="{StaticResource BackgroundSecondary}" LastChildFill="True">
+                <Border DockPanel.Dock="Left"
+                        Background="{StaticResource AccentBlue}"
+                        CornerRadius="6"
+                        Padding="10,6"
+                        Margin="12,8,8,8"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="PS>" 
+                               Foreground="White" 
+                               FontFamily="Cascadia Code, Consolas, Menlo"
+                               FontSize="13"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <TextBox x:Name="Input"
+                         Margin="0,8,12,8"
+                         Height="36"
+                         KeyDown="Input_KeyDown"
+                         FontFamily="Cascadia Code, Consolas, Menlo"
+                         FontSize="13"
+                         Background="{StaticResource BackgroundTertiary}"
+                         Foreground="{StaticResource TextPrimary}"
+                         BorderBrush="{StaticResource BorderColor}"
+                         BorderThickness="1"/>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

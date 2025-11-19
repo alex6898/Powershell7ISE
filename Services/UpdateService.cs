@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Xml.Linq;
@@ -17,8 +18,49 @@ namespace PsConsoleHost.Services
         // Format: https://raw.githubusercontent.com/USERNAME/REPO/BRANCH/version.xml
         private const string UpdateUrl = "https://raw.githubusercontent.com/alex6898/Powershell7ISE/main/version.xml";
         
-        // Version actuelle de l'application (doit correspondre à setup.iss)
-        private static readonly Version CurrentVersion = new Version("1.0.0");
+        // Version actuelle de l'application (lue automatiquement depuis l'assembly)
+        private static readonly Version CurrentVersion = GetCurrentVersion();
+        
+        /// <summary>
+        /// Récupère la version actuelle depuis l'assembly
+        /// </summary>
+        private static Version GetCurrentVersion()
+        {
+            try
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var version = assembly.GetName().Version;
+                if (version != null)
+                {
+                    // Si Build est -1, utiliser seulement Major.Minor
+                    if (version.Build >= 0)
+                    {
+                        return new Version(version.Major, version.Minor, version.Build);
+                    }
+                    else
+                    {
+                        return new Version(version.Major, version.Minor);
+                    }
+                }
+                
+                // Essayer aussi avec AssemblyInformationalVersion
+                var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                if (infoVersion != null && !string.IsNullOrEmpty(infoVersion.InformationalVersion))
+                {
+                    // Extraire seulement la partie version (avant le + si présent)
+                    var versionStr = infoVersion.InformationalVersion.Split('+')[0].Split('-')[0];
+                    if (Version.TryParse(versionStr, out var parsedVersion))
+                    {
+                        return new Version(parsedVersion.Major, parsedVersion.Minor, parsedVersion.Build >= 0 ? parsedVersion.Build : 0);
+                    }
+                }
+            }
+            catch
+            {
+                // En cas d'erreur, utiliser une version par défaut
+            }
+            return new Version("1.0.0");
+        }
 
         /// <summary>
         /// Initialise le service de mise à jour automatique
