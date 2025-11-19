@@ -2,7 +2,7 @@
 ; Ce script installe automatiquement tous les prérequis nécessaires (.NET 8.0, WebView2)
 
 #define MyAppName "Powershell 7 ISE"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "Powershell 7 ISE"
 #define MyAppExeName "PsConsoleHost.exe"
 #define MyAppId "{{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
@@ -47,7 +47,8 @@ Source: "bin\Release\net8.0-windows\*"; DestDir: "{app}"; Flags: ignoreversion r
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+; Raccourci bureau avec nom fixe pour éviter les doublons
+Name: "{autodesktop}\Powershell 7 ISE"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
 
 [Run]
@@ -437,6 +438,19 @@ begin
   finally
     WizardForm.StatusLabel.Caption := StatusText;
     WizardForm.ProgressGauge.Style := npbstNormal;
+  end;
+end;
+
+// Fonction pour supprimer l'ancien raccourci "PsConsoleHost" s'il existe
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+  begin
+    // Supprimer l'ancien raccourci "PsConsoleHost" du bureau
+    if FileExists(ExpandConstant('{autodesktop}\PsConsoleHost.lnk')) then
+    begin
+      DeleteFile(ExpandConstant('{autodesktop}\PsConsoleHost.lnk'));
+    end;
   end;
 end;
 
