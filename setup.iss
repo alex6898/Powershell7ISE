@@ -1,5 +1,4 @@
 ; Script d'installation Inno Setup pour Powershell 7 ISE
-; Ce script installe automatiquement tous les prérequis nécessaires (.NET 8.0, WebView2)
 
 #define MyAppName "Powershell 7 ISE"
 #define MyAppVersion "1.0.3"
@@ -456,62 +455,9 @@ end;
 
 // Fonction appelée avant l'installation
 function InitializeSetup(): Boolean;
-var
-  DotNetMissing: Boolean;
-  WebView2Missing: Boolean;
-  Response: Integer;
 begin
+  // Aucune vérification de prérequis - l'installation continue directement
   Result := True;
-  DotNetMissing := not IsDotNet80Installed();
-  WebView2Missing := not IsWebView2Installed();
-  
-  if DotNetMissing or WebView2Missing then
-  begin
-    if DotNetMissing and WebView2Missing then
-    begin
-      Response := MsgBox('Les prérequis suivants sont manquants:' + #13#10 +
-                         '- .NET 8.0 Desktop Runtime' + #13#10 +
-                         '- WebView2 Runtime' + #13#10 + #13#10 +
-                         'Souhaitez-vous les installer maintenant ?', mbConfirmation, MB_YESNO);
-    end
-    else if DotNetMissing then
-    begin
-      Response := MsgBox('.NET 8.0 Desktop Runtime est manquant.' + #13#10 +
-                         'Souhaitez-vous l''installer maintenant ?', mbConfirmation, MB_YESNO);
-    end
-    else
-    begin
-      Response := MsgBox('WebView2 Runtime est manquant.' + #13#10 +
-                         'Souhaitez-vous l''installer maintenant ?', mbConfirmation, MB_YESNO);
-    end;
-    
-    if Response = IDYES then
-    begin
-      if DotNetMissing then
-      begin
-        if not InstallDotNet80() then
-        begin
-          Result := False;
-          Exit;
-        end;
-      end;
-      
-      if WebView2Missing then
-      begin
-        if not InstallWebView2() then
-        begin
-          Result := False;
-          Exit;
-        end;
-      end;
-    end
-    else
-    begin
-      MsgBox('L''installation ne peut pas continuer sans les prérequis nécessaires.', mbError, MB_OK);
-      Result := False;
-      Exit;
-    end;
-  end;
 end;
 
 // Fonction appelée avant la désinstallation
