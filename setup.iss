@@ -63,52 +63,7 @@ var
 begin
   Result := False;
   
-  // Méthode 1: Vérifier via le registre pour .NET 8.0
-  if IsWin64 then
-  begin
-    RegKey := 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost';
-    if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '8.0', Release) then
-    begin
-      Result := True;
-      Exit;
-    end;
-    
-    // Vérifier aussi dans WOW6432Node
-    RegKey := 'SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedhost';
-    if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '8.0', Release) then
-    begin
-      Result := True;
-      Exit;
-    end;
-  end
-  else
-  begin
-    RegKey := 'SOFTWARE\dotnet\Setup\InstalledVersions\x86\sharedhost';
-    if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '8.0', Release) then
-    begin
-      Result := True;
-      Exit;
-    end;
-  end;
-  
-  // Méthode 2: Vérifier via la commande dotnet --version
-  if Exec('dotnet', '--version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-  begin
-    if ResultCode = 0 then
-    begin
-      // Vérifier si la version commence par 8.
-      if Exec('powershell.exe', '-Command "if ((dotnet --version) -like ''8.*'') { exit 0 } else { exit 1 }"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-      begin
-        if ResultCode = 0 then
-        begin
-          Result := True;
-          Exit;
-        end;
-      end;
-    end;
-  end;
-  
-  // Méthode 3: Vérifier via le chemin d'installation
+  // Méthode 1: Vérifier via le chemin d'installation (la plus fiable)
   if DirExists(ExpandConstant('{commonpf}\dotnet\shared\Microsoft.WindowsDesktop.App\8.0')) then
   begin
     Result := True;
@@ -119,6 +74,81 @@ begin
   begin
     Result := True;
     Exit;
+  end;
+  
+  // Méthode 2: Vérifier via dotnet --list-runtimes (plus fiable que --version)
+  if Exec('dotnet', '--list-runtimes', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    if ResultCode = 0 then
+    begin
+      // Utiliser une commande PowerShell pour vérifier la présence de .NET 8.0 Desktop Runtime
+      if Exec('powershell.exe', '-Command "$runtimes = dotnet --list-runtimes; if ($runtimes -match ''Microsoft.WindowsDesktop.App 8\.'') { exit 0 } else { exit 1 }"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      begin
+        if ResultCode = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+  end;
+  
+  // Méthode 3: Vérifier via le registre (moins fiable, mais on essaie quand même)
+  try
+    if IsWin64 then
+    begin
+      // Vérifier dans les différentes clés possibles
+      RegKey := 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost';
+      if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '8.0', Release) then
+      begin
+        Result := True;
+        Exit;
+      end;
+      
+      // Vérifier aussi dans WOW6432Node
+      RegKey := 'SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedhost';
+      if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '8.0', Release) then
+      begin
+        Result := True;
+        Exit;
+      end;
+      
+      // Vérifier les clés de version spécifique (essayer de lire une valeur)
+      RegKey := 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost\8.0';
+      if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '', Release) then
+      begin
+        Result := True;
+        Exit;
+      end;
+    end
+    else
+    begin
+      RegKey := 'SOFTWARE\dotnet\Setup\InstalledVersions\x86\sharedhost';
+      if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, '8.0', Release) then
+      begin
+        Result := True;
+        Exit;
+      end;
+    end;
+  except
+    // Ignorer les erreurs de registre
+  end;
+  
+  // Méthode 4: Vérifier via dotnet --version (dernier recours)
+  if Exec('dotnet', '--version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    if ResultCode = 0 then
+    begin
+      // Si dotnet existe, vérifier qu'il peut lister les runtimes
+      if Exec('powershell.exe', '-Command "try { $runtimes = dotnet --list-runtimes 2>&1; if ($runtimes -match ''Microsoft.WindowsDesktop.App 8\.'') { exit 0 } else { exit 1 } } catch { exit 1 }"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      begin
+        if ResultCode = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
   end;
 end;
 
