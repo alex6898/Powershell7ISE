@@ -19,6 +19,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.64.0" />
     <PackageReference Include="Microsoft.Identity.Client.Desktop" Version="4.64.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2845.51" />
 
   </ItemGroup>
 

@@ -187,18 +187,52 @@ end;
 // Fonction pour trouver un fichier SDK .NET dans le dossier installer
 function FindDotNetSDKFile(Architecture: String): String;
 var
-  SdkFiles: TArrayOfString;
-  i: Integer;
   FileName: String;
 begin
   Result := '';
   
   // Chercher les fichiers SDK possibles pour cette architecture
   // Format: dotnet-sdk-8.0.*-win-{arch}.exe
-  SetArrayLength(SdkFiles, 0);
+  // Essayer d'abord avec {srcexe}, puis avec {src}
   
   // Vérifier les versions SDK courantes (8.0.416, 8.0.400, etc.)
-  // On va chercher avec des noms spécifiques
+  // Essayer d'abord avec {srcexe} (plus fiable)
+  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.416-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.400-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.300-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.200-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  FileName := ExpandConstant('{srcexe}\..\installer\dotnet-sdk-8.0.100-win-' + Architecture + '.exe');
+  if FileExists(FileName) then
+  begin
+    Result := FileName;
+    Exit;
+  end;
+  
+  // Essayer avec {src} comme alternative
   FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.416-win-' + Architecture + '.exe');
   if FileExists(FileName) then
   begin
@@ -212,27 +246,6 @@ begin
     Result := FileName;
     Exit;
   end;
-  
-  FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.300-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.200-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
-  
-  FileName := ExpandConstant('{src}\installer\dotnet-sdk-8.0.100-win-' + Architecture + '.exe');
-  if FileExists(FileName) then
-  begin
-    Result := FileName;
-    Exit;
-  end;
 end;
 
 // Fonction pour télécharger un fichier via PowerShell
@@ -241,16 +254,28 @@ var
   ResultCode: Integer;
   PowerShellScript: String;
   ScriptFile: String;
+  DestDir: String;
 begin
   Result := False;
   ScriptFile := ExpandConstant('{tmp}\download.ps1');
+  DestDir := ExtractFileDir(DestFile);
+  
+  // Créer le répertoire de destination s'il n'existe pas
+  if not DirExists(DestDir) then
+    ForceDirectories(DestDir);
   
   // Créer un script PowerShell pour télécharger le fichier
   PowerShellScript := 'try {' + #13#10 +
                       '  $ProgressPreference = ''SilentlyContinue''' + #13#10 +
-                      '  Invoke-WebRequest -Uri ''' + Url + ''' -OutFile ''' + DestFile + '''' + #13#10 +
+                      '  $ErrorActionPreference = ''Stop''' + #13#10 +
+                      '  $destDir = [System.IO.Path]::GetDirectoryName(''' + DestFile + ''')' + #13#10 +
+                      '  if (-not [System.IO.Directory]::Exists($destDir)) {' + #13#10 +
+                      '    [System.IO.Directory]::CreateDirectory($destDir) | Out-Null' + #13#10 +
+                      '  }' + #13#10 +
+                      '  Invoke-WebRequest -Uri ''' + Url + ''' -OutFile ''' + DestFile + ''' -UseBasicParsing' + #13#10 +
                       '  exit 0' + #13#10 +
                       '} catch {' + #13#10 +
+                      '  Write-Host $_.Exception.Message' + #13#10 +
                       '  exit 1' + #13#10 +
                       '}';
   
@@ -295,7 +320,12 @@ begin
     
     // Vérifier si le fichier existe déjà dans le dossier installer (priorité)
     // D'abord chercher Desktop Runtime, puis SDK (les SDK incluent aussi le runtime)
-    if FileExists(ExpandConstant('{src}\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe')) then
+    // Essayer plusieurs emplacements possibles
+    if FileExists(ExpandConstant('{srcexe}\..\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe')) then
+    begin
+      TempFile := ExpandConstant('{srcexe}\..\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe');
+    end
+    else if FileExists(ExpandConstant('{src}\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe')) then
     begin
       TempFile := ExpandConstant('{src}\installer\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe');
     end
@@ -303,17 +333,13 @@ begin
     begin
       // Chercher le SDK correspondant (peut avoir différentes versions)
       TempFile := FindDotNetSDKFile(Architecture);
-      if TempFile <> '' then
-      begin
-        // SDK trouvé, on l'utilisera
-      end
-      else
+      if TempFile = '' then
       begin
         // Aucun fichier local trouvé, on va télécharger
         TempFile := ExpandConstant('{tmp}\dotnet-desktop-runtime-8.0.0-win-' + Architecture + '.exe');
         
         // URLs de téléchargement pour .NET 8.0 Desktop Runtime
-        // Essayer plusieurs URLs car les liens Microsoft peuvent changer
+        // Utiliser les URLs officielles Microsoft
         if Architecture = 'x64' then
           DownloadUrl := 'https://download.visualstudio.microsoft.com/download/pr/81513200-6370-4fd8-9579-6d59bd0c8d62/8b0ad1953d5e8f54e5d0e42e8c5b7e3e/dotnet-desktop-runtime-8.0.0-win-x64.exe'
         else if Architecture = 'x86' then
