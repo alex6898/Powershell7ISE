@@ -1,7 +1,7 @@
 ; Script d'installation Inno Setup pour Powershell 7 ISE
 
 #define MyAppName "Powershell 7 ISE"
-#define MyAppVersion "1.0.5"
+#define MyAppVersion "1.0.6"
 #define MyAppPublisher "Powershell 7 ISE"
 #define MyAppExeName "Powershell7ISE.exe"
 #define MyAppId "{{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
