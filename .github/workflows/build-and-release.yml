@@ -54,7 +54,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: installer/PsConsoleHost-Setup.exe
+        files: installer/Powershell7ISE-Setup.exe
         tag_name: v${{ steps.get_version.outputs.version }}
         name: Version ${{ steps.get_version.outputs.version }}
         draft: false
