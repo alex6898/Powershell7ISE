@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-    <version>1.0.6</version>
-    <url>https://github.com/alex6898/Powershell7ISE/releases/download/v1.0.6/Powershell7ISE-Setup.exe</url>
-    <changelog>https://github.com/alex6898/Powershell7ISE/releases/tag/v1.0.6</changelog>
+    <version>1.0.7</version>
+    <url>https://github.com/alex6898/Powershell7ISE/releases/download/v1.0.7/Powershell7ISE-Setup.exe</url>
+    <changelog>https://github.com/alex6898/Powershell7ISE/releases/tag/v1.0.7</changelog>
     <mandatory>false</mandatory>
 </item>

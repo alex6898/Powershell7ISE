@@ -1,3 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -8,26 +9,23 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
     <AssemblyName>Powershell7ISE</AssemblyName>
-    <Version>1.0.6</Version>
-    <AssemblyVersion>1.0.6.0</AssemblyVersion>
-    <FileVersion>1.0.6.0</FileVersion>
+    <Version>1.0.7</Version>
+    <AssemblyVersion>1.0.7.0</AssemblyVersion>
+    <FileVersion>1.0.7.0</FileVersion>
+    <!-- Force la recompilation des ressources XAML pour éviter les problèmes de cache -->
+    <GenerateResourceNeverLockTypeAssemblies>true</GenerateResourceNeverLockTypeAssemblies>
   </PropertyGroup>
-
   <ItemGroup>
-   
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.64.0" />
     <PackageReference Include="Microsoft.Identity.Client.Desktop" Version="4.64.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2845.51" />
-
   </ItemGroup>
-
   <!-- Ressource de coloration -->
   <ItemGroup>
     <Resource Include="PowerShell.xshd" />
   </ItemGroup>
-  
   <!-- Icône de l'application -->
   <ItemGroup>
     <Resource Include="Resources\app.ico" />
